@@ -1,14 +1,23 @@
 from pydantic import BaseModel
-from typing import Generic, TypeVar, Optional
+from typing import Any, Optional, Generic, TypeVar
 
-T = TypeVar("T")
+T = TypeVar('T')
 
-class ResponseModel(BaseModel, Generic[T]):
-    success: int
+class ResponseDto(BaseModel, Generic[T]):
+    success: bool
     message: str
-    data: Optional[T]
+    data: Optional[T] = None
+    error: Optional[str] = None
 
-class ErrorResponseModel(BaseModel):
-    success: int
-    message: str
-    data: dict={}
+class PaginationDTO(BaseModel):
+    page: int
+    size: int
+    total: int
+    total_pages: int
+
+class PaginationReponseDto(BaseModel):
+    # success: bool
+    # message: str
+    # data: list[Any]
+    pagination: Optional[PaginationDTO] = None
+    
