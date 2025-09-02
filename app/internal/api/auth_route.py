@@ -7,7 +7,7 @@ from internal.util.auth import security
 from internal.util.rbac import RolePermissions
 from dto.auth_dto import LoginRequestDTO, LoginResponseDTO, UserProfileDTO
 from dto.response_dto import ResponseDTO
-from domain.user_model import User
+from domain.user_model import User, UserRole
 from prisma import Prisma
 
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
@@ -91,3 +91,39 @@ async def verify_token(
             created_at= current_user.created_at.isoformat() if current_user.created_at else None
         )
     )
+
+#route roles
+
+@router.get("/admin/users", response_model=ResponseDTO[list])
+@require_role(UserRole.ADMINISTRATOR)
+async def get_all_users(
+    current_user: User = Depends(get_current_user)
+):
+    return ResponseDTO[list](
+        success= True,
+        message= "User retrieved successfully",
+        data= []
+    )
+
+@router.get("/hrd/employess", response_model=ResponseDTO[list])
+@require_role(UserRole.HRD, UserRole.ADMINISTRATOR)
+async def get_all_employees(
+    current_user: User = Depends(get_all_employees)
+):
+    return ResponseDTO[list](
+        success= True,
+        message= "Employees retrieved successfully",
+        data= []
+    )
+
+@router.get("/finance/payslips", response_model=ResponseDTO[list])
+@require_role(UserRole.FINANCE, UserRole.ADMINISTRATOR)
+async def get_all_payslips(
+    current_user: User = Depends(get_current_user)
+):
+    return ResponseDTO[list](
+        success= True,
+        message= "Payslips retrieved successfully",
+        data= []
+    )
+

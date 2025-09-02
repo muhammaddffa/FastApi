@@ -33,7 +33,7 @@ end
 # Unset irrelevant variables.
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV /home/dapuq/Documents/playground/fastapi/belajar-fastAPI/fastapi-env
+set -gx VIRTUAL_ENV /home/dapuq/Documents/magang/payroll/fastapi-env
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/"bin $PATH
