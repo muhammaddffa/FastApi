@@ -1,6 +1,6 @@
 from typing import List, Dict
 from fastapi import HTTPException, status
-from domain.user_model import UserRole
+from app.domain.user_model import UserRole
 
 class RolePermissions:
     PERMISSIONS = {

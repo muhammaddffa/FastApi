@@ -1,10 +1,10 @@
 from pydantic import BaseModel, Field
 from typing import Optional
-from domain.user_model import UserRole
+from app.domain.user_model import UserRole
 
 class LoginRequestDTO(BaseModel):
     username: str =  Field (... , min_length=4, max_length=20)
-    password: str =  Field (..., min_length=4, max_length=20)
+    password: str =  Field (..., min_length=6)
 
 class LoginResponseDTO(BaseModel):
     access_token: str

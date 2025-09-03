@@ -1,14 +1,18 @@
-from fastapi.responses import JSONResponse
-from app.dto.response_dto import ResponseModel, ErrorResponseModel
+from typing import Any, Optional
+from app.dto.response_dto import ResponseDTO
 
-def success_response(message: str, data: dict, status_code: int = 200):
-    return JSONResponse(
-        status_code=status_code,
-        content=ResponseModel(success=status_code, message=message, data=data).dict()
+def success_response(message: str, data: Any = None) -> ResponseDTO:
+    return ResponseDTO(
+        success=True,
+        message=message,
+        data=data,
+        error=None
     )
 
-def error_response(message: str, status_code: int = 400):
-    return JSONResponse(
-        status_code=status_code,
-        content=ErrorResponseModel(success=status_code, message=message, data={}).dict()
+def error_response(message: str, error: str = None) -> ResponseDTO:
+    return ResponseDTO(
+        success=False,
+        message=message,
+        data=None,
+        error=error or message
     )

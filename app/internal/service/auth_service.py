@@ -1,11 +1,11 @@
 from datetime import timedelta
 from typing import Optional
 from fastapi import HTTPException, status
-from internal.repository.auth_repo import AuthRepository
-from internal.util.auth import verify_password, create_access_token, verify_token
-from dto.auth_dto import LoginRequestDTO, LoginResponseDTO, UserProfileDTO
-from domain.user_model import User
-from internal.config.settings import settings
+from app.internal.repository.auth_repo import AuthRepository
+from app.internal.util.auth import verify_password, create_access_token, verify_token
+from app.dto.auth_dto import LoginRequestDTO, LoginResponseDTO, UserProfileDTO
+from app.domain.user_model import User
+from app.internal.config.settings import settings
 
 class AuthService:
     def __init__(self, auth_repo: AuthRepository):

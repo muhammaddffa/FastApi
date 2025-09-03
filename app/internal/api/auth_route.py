@@ -1,18 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials
-from internal.service.auth_service import AuthService
-from internal.repository.auth_repo import AuthRepository
-from internal.connection.prisma import get_db
-from internal.util.auth import security
-from internal.util.rbac import RolePermissions
-from dto.auth_dto import LoginRequestDTO, LoginResponseDTO, UserProfileDTO
-from dto.response_dto import ResponseDTO
-from domain.user_model import User, UserRole
+from app.internal.service.auth_service import AuthService
+from app.internal.repository.auth_repo import AuthRepository
+from app.internal.connection.prisma import connect_db, disconnect_db
+from app.internal.util.auth import security
+from app.internal.util.rbac import RolePermissions
+from app.dto.auth_dto import LoginRequestDTO, LoginResponseDTO, UserProfileDTO
+from app.dto.response_dto import ResponseDTO
+from app.domain.user_model import User, UserRole
 from prisma import Prisma
 
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
 
-def get_auth_service(db: Prisma = Depends(get_db)) -> AuthService:
+def get_auth_service(db: Prisma = Depends(connect_db)) -> AuthService:
     auth_repo = AuthRepository(db)
     return AuthService(auth_repo)
 
@@ -74,12 +74,12 @@ async def get_profile(
             error=str(e)
         )
     
-@router.get("verify", response_model=ResponseDTO[UserProfileDTO])
+@router.get("/verify", response_model=ResponseDTO[UserProfileDTO])
 async def verify_token(
     current_user: User = Depends(get_current_user)
 ):
     return ResponseDTO[UserProfileDTO](
-        success=True,
+        success=True,   
         message= "Token is valid",
         data= UserProfileDTO(
             user_id = current_user.user_id,
@@ -108,7 +108,7 @@ async def get_all_users(
 @router.get("/hrd/employess", response_model=ResponseDTO[list])
 @require_role(UserRole.HRD, UserRole.ADMINISTRATOR)
 async def get_all_employees(
-    current_user: User = Depends(get_all_employees)
+    current_user: User = Depends(get_current_user)
 ):
     return ResponseDTO[list](
         success= True,

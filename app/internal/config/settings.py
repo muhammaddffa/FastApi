@@ -1,13 +1,17 @@
 from dotenv import load_dotenv
 import os
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 
 load_dotenv()
 
 class Settings(BaseSettings):
-    SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret")
-    DATABASE_URL = os.getenv("DATABASE_URL")
-    JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
-    ACCESS_TOKEN_EXPIRES = int(os.getenv("ACCESS_TOKEN_EXPIRES", "3600"))
+    SECRET_KEY: str = "dev-secret"
+    DATABASE_URL: str
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRES: int = 3600
 
-settings = Settings()
+    class Config:
+        env_file = ".env"
+        extra = "ignore"
+
+settings = Settings()   

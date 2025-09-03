@@ -1,6 +1,6 @@
 from typing import Optional
 from prisma import Prisma
-from domain.user_model import User
+from app.domain.user_model import User
 from datetime import datetime
 
 class AuthRepository:

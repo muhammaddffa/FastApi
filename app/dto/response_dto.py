@@ -3,10 +3,20 @@ from typing import Any, Optional, Generic, TypeVar
 
 T = TypeVar('T')
 
-class ResponseDto(BaseModel, Generic[T]):
-    success: bool
+class ResponseModel(BaseModel, Generic[T]):
+    success: bool = True
     message: str
     data: Optional[T] = None
+
+class ErrorResponseModel(BaseModel):
+    success: bool = False
+    message: str
+    error: Optional[str] = None
+
+class ResponseDTO(BaseModel, Generic[T]):
+    success: bool
+    message: str
+    data: Optional[T] = None    
     error: Optional[str] = None
 
 class PaginationDTO(BaseModel):
@@ -15,9 +25,5 @@ class PaginationDTO(BaseModel):
     total: int
     total_pages: int
 
-class PaginationReponseDto(BaseModel):
-    # success: bool
-    # message: str
-    # data: list[Any]
+class PaginatedResponseDTO(ResponseDTO[T]):
     pagination: Optional[PaginationDTO] = None
-    
