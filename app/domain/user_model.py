@@ -13,6 +13,7 @@ class User(BaseModel):
     user_id: str
     username: str
     email: EmailStr
+    password: str
     role: UserRole
     employee_id: Optional[str] = None
     is_active: bool = True

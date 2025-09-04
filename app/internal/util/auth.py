@@ -8,7 +8,7 @@ from app.domain.user_model import User, UserRole
 from app.internal.config.settings import settings
 
 
-pwd_context = CryptContext(schemes="bcrypt", deprecated="auto")
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer()
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:

@@ -10,7 +10,7 @@ class LoginResponseDTO(BaseModel):
     access_token: str
     token_type : str = "bearer"
     user_id: str
-    usernmae: str
+    username: str
     email: str
     role: UserRole
     employee_id: Optional[str] = None

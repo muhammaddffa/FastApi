@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials
 from app.internal.service.auth_service import AuthService
 from app.internal.repository.auth_repo import AuthRepository
-from app.internal.connection.prisma import connect_db, disconnect_db
+from app.internal.connection.prisma import connect_db, get_db
 from app.internal.util.auth import security
 from app.internal.util.rbac import RolePermissions
 from app.dto.auth_dto import LoginRequestDTO, LoginResponseDTO, UserProfileDTO
@@ -12,7 +12,7 @@ from prisma import Prisma
 
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
 
-def get_auth_service(db: Prisma = Depends(connect_db)) -> AuthService:
+def get_auth_service(db: Prisma = Depends(get_db)) -> AuthService:
     auth_repo = AuthRepository(db)
     return AuthService(auth_repo)
 

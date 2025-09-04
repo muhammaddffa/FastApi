@@ -1,7 +1,7 @@
 generator client {
   provider                    = "prisma-client-py"
-  recursive_type_depth        = -1
-  enable_experimental_decimal = true  // ← Tambahkan baris ini
+  recursive_type_depth        = "-1"
+  enable_experimental_decimal = "true"
 }
 
 datasource db {
@@ -31,7 +31,7 @@ model attendance {
 }
 
 model deductions {
-  deduction_id   String    @id @default(dbgenerated("uuid_generate_v4")) @db.Uuid
+  deduction_id   String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   deduction_name String    @db.VarChar(100)
   amount         Decimal   @db.Decimal(15, 2)
   is_active      Boolean?  @default(true)
@@ -122,7 +122,7 @@ model users {
   user_id         String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   username        String            @unique @db.VarChar(50)
   email           String            @unique @db.VarChar(100)
-  password_hash   String            @db.VarChar(255)
+  password        String            @db.VarChar(255)
   role            String            @db.VarChar(20)
   employee_id     String?           @db.Uuid
   is_active       Boolean?          @default(true)
