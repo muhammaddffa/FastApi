@@ -29,7 +29,7 @@ class AuthMiddleware:
             )
         try:
             payload = verify_token(token)
-            request.state.use_id = payload.get("sub")
+            request.state.user_id = payload.get("sub")
             request.state.username = payload.get("username")
             request.state.role = payload.get("role")
             request.state.employee_id = payload.get("employee_id")

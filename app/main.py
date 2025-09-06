@@ -5,8 +5,6 @@ from app.internal.connection.prisma import connect_db, disconnect_db
 from app.internal.api import auth_route
 from app.internal.connection.prisma import db
 
-
-
 app = FastAPI(
     title="Payroll Management System",
     version="1.0.0",
