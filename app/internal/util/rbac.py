@@ -5,12 +5,14 @@ from app.domain.user_model import UserRole
 class RolePermissions:
     PERMISSIONS = {
         UserRole.EMPLOYEE: [
+            "employee", 
             "view_own_profile",
-            "edit_own_payslip",
+            "view_own_payslip",  
             "view_own_attendance",
             "update_own_profile",
         ],
         UserRole.HRD: [
+            "hrd",  
             "view_own_profile",
             "edit_own_payslip",
             "view_own_attendance",
@@ -24,6 +26,7 @@ class RolePermissions:
             "create_payroll_periods"
         ],
         UserRole.FINANCE: [
+            "finance",  
             "view_own_profile",
             "view_own_payslip",
             "view_own_attendance", 
@@ -39,7 +42,9 @@ class RolePermissions:
             "manage_deductions",
             "export_payroll"
         ],
-        UserRole.ADMINISTRATOR: ["view_own_profile",
+        UserRole.ADMINISTRATOR: [
+            "administrator",  
+            "view_own_profile",
             "view_own_payslip",
             "view_own_attendance",
             "update_own_profile",
@@ -63,7 +68,7 @@ class RolePermissions:
             "export_payroll",
             "manage_users",
             "view_export_logs"
-            ],
+        ],
     }
 
     @classmethod
@@ -71,20 +76,33 @@ class RolePermissions:
         return permission in cls.PERMISSIONS.get(user_role, [])
     
     @classmethod
-    def require_permission(cls, permission: str):
-        def decarator(func):
-            def wrapper(*args, **kwargs):
+    def require_permission(cls, permissions: List[str]):
+        def decorator(func):
+            async def wrapper(*args, **kwargs):
                 current_user = kwargs.get('current_user')
                 if not current_user:
                     raise HTTPException(
                         status_code=status.HTTP_401_UNAUTHORIZED,
                         detail="Authentication required",
                     )
-                if not cls.has_permission(current_user.role, permission):
+                
+                # Check if user has any of the required permissions
+                has_access = False
+                for permission in permissions:
+                    if cls.has_permission(current_user.role, permission):
+                        has_access = True
+                        break
+                
+                if not has_access:
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
-                        detail=f"Insufficient permissions. Required {permission}",
+                        detail=f"Insufficient permissions. Required one of: {permissions}",
                     )
-                return func(*args, **kwargs)
+                
+                return await func(*args, **kwargs)
             return wrapper
-        return decarator
+        return decorator
+
+# Fungsi standalone untuk backward compatibility
+def require_permission(permissions: List[str]):
+    return RolePermissions.require_permission(permissions)

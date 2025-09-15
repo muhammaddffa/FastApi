@@ -1,17 +1,18 @@
 from prisma import Prisma
-from contextlib import asynccontextmanager
 
-db = Prisma()
+prisma = Prisma()
 
+db = prisma
 async def connect_db():
-    await db.connect()
-    print("Database connected")
+    if not prisma.is_connected():
+        await prisma.connect()
+    return prisma
 
 async def disconnect_db():
-    await db.disconnect()
-    print("Database disconnected")
+    if prisma.is_connected():
+        await prisma.disconnect()
 
 async def get_db() -> Prisma:
-    if not db.is_connected():
-        await db.connect()
-    return db
+    if not prisma.is_connected():
+        await prisma.connect()
+    return prisma

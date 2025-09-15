@@ -91,7 +91,7 @@ class EmployeeQueryDto(BaseModel):
     department: Optional[str] = Field(None)
     is_active: Optional[bool] = Field(None)
     sort_by: Optional[str] = Field("full_name")
-    sort_order: Optional[str] = Field("asc", regex="^(asc|desc)$")
+    sort_order: Optional[str] = Field("asc", pattern="^(asc|desc)$")
 
     class Config: 
         json_encoders = {

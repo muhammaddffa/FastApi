@@ -1,9 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from app.internal.connection.prisma import connect_db, disconnect_db
-from app.internal.api import auth_route
-from app.internal.connection.prisma import db
+from app.internal.api import auth_route, employee_route
+from app.internal.connection.prisma import db, connect_db, disconnect_db
 
 app = FastAPI(
     title="Payroll Management System",
@@ -19,6 +18,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_route.router)
+app.include_router(employee_route.router)
 
 @app.on_event("startup")
 async def startup():

@@ -1,31 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials
-from app.internal.service.auth_service import AuthService
-from app.internal.repository.auth_repo import AuthRepository
-from app.internal.connection.prisma import connect_db, get_db
-from app.internal.util.auth import security
-from app.internal.util.rbac import RolePermissions
+from app.internal.util.dependency import get_current_user, get_auth_service
 from app.dto.auth_dto import LoginRequestDTO, LoginResponseDTO, UserProfileDTO
 from app.dto.response_dto import ResponseDTO
 from app.domain.user_model import User, UserRole
-from prisma import Prisma
 
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
 
-def get_auth_service(db: Prisma = Depends(get_db)) -> AuthService:
-    auth_repo = AuthRepository(db)
-    return AuthService(auth_repo)
-
-async def get_current_user(
-        credentials: HTTPAuthorizationCredentials = Depends(security),
-        auth_service: AuthService = Depends(get_auth_service)
-) -> User:
-    return await auth_service.get_current_user(credentials.credentials)
-
-def require_role (*allowed_roles):
+def require_role(*allowed_roles):
     def decorator(func):
         async def wrapper(*args, **kwargs):
-            current_user= kwargs.get('current_user')
+            current_user = kwargs.get('current_user')
             if not current_user or current_user.role not in allowed_roles:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
@@ -38,7 +22,7 @@ def require_role (*allowed_roles):
 @router.post("/login", response_model=ResponseDTO[LoginResponseDTO])
 async def login(
     login_data: LoginRequestDTO,
-    auth_service: AuthService = Depends(get_auth_service)
+    auth_service=Depends(get_auth_service)
 ):
     try:
         result = await auth_service.authenticate_user(login_data)
@@ -58,14 +42,14 @@ async def login(
 @router.get("/profile", response_model=ResponseDTO[UserProfileDTO])
 async def get_profile(
     current_user: User = Depends(get_current_user),
-    auth_service: AuthService = Depends(get_auth_service)
+    auth_service=Depends(get_auth_service)
 ):
     try:
         profile = await auth_service.get_user_profile(current_user.user_id) 
         return ResponseDTO[UserProfileDTO](
             success=True,
-            message= "Profile retrieved successfully",
-            data= profile,
+            message="Profile retrieved successfully",
+            data=profile,
         )
     except Exception as e:
         return ResponseDTO[UserProfileDTO](
@@ -80,40 +64,39 @@ async def verify_token(
 ):
     return ResponseDTO[UserProfileDTO](
         success=True,   
-        message= "Token is valid",
-        data= UserProfileDTO(
-            user_id = current_user.user_id,
-            username= current_user.username,
-            email= current_user.email,
-            role= current_user.role,
+        message="Token is valid",
+        data=UserProfileDTO(
+            user_id=current_user.user_id,
+            username=current_user.username,
+            email=current_user.email,
+            role=current_user.role,
             employee_id=current_user.employee_id,
             is_active=current_user.is_active,
-            created_at= current_user.created_at.isoformat() if current_user.created_at else None
+            created_at=current_user.created_at.isoformat() if current_user.created_at else None
         )
     )
 
-#route roles
-
+# Route roles
 @router.get("/admin/users", response_model=ResponseDTO[list])
 @require_role(UserRole.ADMINISTRATOR)
 async def get_all_users(
     current_user: User = Depends(get_current_user)
 ):
     return ResponseDTO[list](
-        success= True,
-        message= "User retrieved successfully",
-        data= []
+        success=True,
+        message="User retrieved successfully",
+        data=[]
     )
 
-@router.get("/hrd/employess", response_model=ResponseDTO[list])
+@router.get("/hrd/employees", response_model=ResponseDTO[list])
 @require_role(UserRole.HRD, UserRole.ADMINISTRATOR)
 async def get_all_employees(
     current_user: User = Depends(get_current_user)
 ):
     return ResponseDTO[list](
-        success= True,
-        message= "Employees retrieved successfully",
-        data= []
+        success=True,
+        message="Employees retrieved successfully",
+        data=[]
     )
 
 @router.get("/finance/payslips", response_model=ResponseDTO[list])
@@ -122,8 +105,7 @@ async def get_all_payslips(
     current_user: User = Depends(get_current_user)
 ):
     return ResponseDTO[list](
-        success= True,
-        message= "Payslips retrieved successfully",
-        data= []
+        success=True,
+        message="Payslips retrieved successfully",
+        data=[]
     )
-
