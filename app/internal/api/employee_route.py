@@ -26,6 +26,7 @@ def get_employee_service(db: Prisma = Depends(get_db)) -> EmployeeService:
     employee_repo = EmployeeRepository(db)
     return EmployeeService(employee_repo)
 
+# Create Employee
 @router.post(
     "",
     response_model=Dict[str, Any],
@@ -53,7 +54,33 @@ async def create_employee(
             message="Internal server error",
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
-    
+
+# Update Employee
+@router.patch(
+    "/{employee_id}",
+    response_model=Dict[str,Any],
+    description="Update employee data, requires HR or Finance role"
+)
+@require_permission(["hrd", "finance"])
+async def update_employee(
+    employee_id: str,
+    employee_data: UpdateEmployeeDto,
+    current_user: User = Depends(get_current_user),
+    employee_service: EmployeeService = Depends(get_employee_service)
+):
+    try:
+        employee = await employee_service.update_employee(employee_id, employee_data)
+        return success_response(
+            data=employee.model_dump(),
+            message="Employee updated successfully"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        return error_response(
+            message="Failed to update employee",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 @router.get(
     "",

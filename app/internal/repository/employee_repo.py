@@ -15,13 +15,14 @@ class EmployeeRepository:
                 "employee_code": employee_data.employee_code,
                 "full_name": employee_data.full_name,
                 "position": employee_data.position,
-                "departement": employee_data.departement,
+                "department": employee_data.department,
                 "hire_date": employee_data.hire_date,
                 "basic_salary": employee_data.basic_salary,
                 "email": employee_data.email,
                 "phone": employee_data.phone,
                 "bank_account": employee_data.bank_account,
                 "bank_name": employee_data.bank_name,
+                "status": employee_data.status,
                 "photo_url": employee_data.photo_url
             }
         )
@@ -90,8 +91,8 @@ class EmployeeRepository:
             update_data["full_name"] = employee_data.full_name
         if employee_data.position is not None:
             update_data["position"] = employee_data.position
-        if employee_data.departement is not None:
-            update_data["departement"] = employee_data.departement
+        if employee_data.department is not None:
+            update_data["deoartment"] = employee_data.department
         if employee_data.basic_salary is not None:
             update_data["basic_salary"] = employee_data.basic_salary
         if employee_data.email is not None:
@@ -102,6 +103,8 @@ class EmployeeRepository:
             update_data["bank_account"] = employee_data.bank_account
         if employee_data.bank_name is not None:
             update_data["bank_name"] = employee_data.bank_name
+        if employee_data.status is not None:
+            update_data["status"] = employee_data.status
         if employee_data.is_active is not None:
             update_data["is_active"] = employee_data.is_active
         if employee_data.photo_url is not None:
@@ -118,7 +121,7 @@ class EmployeeRepository:
             data=update_data
         )
     
-    async def delete(self, employee_id: str) -> bool:
+    async def soft_delete(self, employee_id: str) -> bool:
         # soft delete implement
         try:
             await self.prisma.update(
@@ -127,6 +130,7 @@ class EmployeeRepository:
                 },
                 data = {
                     "is_active": False,
+                    "status": "INACTIVE",
                     "updated_at": datetime.now()
                 }
             )

@@ -9,7 +9,7 @@ class Employee(BaseModel):
     employee_code: str
     full_name: str
     position: str
-    departement: Optional[str] = None
+    department: Optional[str] = None
     hire_date: datetime
     basic_salary: Decimal
     email: Optional[str] = None

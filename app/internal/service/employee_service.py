@@ -16,7 +16,7 @@ class EmployeeService:
 
     # check if employee code already exists
     async def create_employee(self, employee_data: CreateEmployeeDto) -> EmployeeResponseDto:
-        existing_code = await self.employee_repo.find_by_id(employee_data.employee_code)
+        existing_code = await self.employee_repo.find_by_code(employee_data.employee_code)
         if existing_code:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -26,7 +26,6 @@ class EmployeeService:
         # check if email already exists (if provided)
         if employee_data.email:
             existing_email = await self.employee_repo.find_by_email(employee_data.email)
-        
             if existing_email:
                 raise  HTTPException(
                     status_code= status.HTTP_400_BAD_REQUEST,
@@ -81,7 +80,7 @@ class EmployeeService:
                 detail=f"Failed to retrieve employees: {str(e)}"
             )
     
-    async def update_employees(self, employee_id: str, employee_data: UpdateEmployeeDto) -> EmployeeResponseDto:
+    async def update_employee(self, employee_id: str, employee_data: UpdateEmployeeDto) -> EmployeeResponseDto:
         
         # checking employee exists
         existing_employee = await self.employee_repo.find_by_id(employee_id)
