@@ -1,4 +1,5 @@
 from typing import List, Dict
+from functools import wraps
 from fastapi import HTTPException, status
 from app.domain.user_model import UserRole
 
@@ -14,7 +15,7 @@ class RolePermissions:
         UserRole.HRD: [
             "hrd",  
             "view_own_profile",
-            "edit_own_payslip",
+            "view_own_payslip",
             "view_own_attendance",
             "update_own_profile",
             "view_all_employees",
@@ -78,25 +79,32 @@ class RolePermissions:
     @classmethod
     def require_permission(cls, permissions: List[str]):
         def decorator(func):
+            @wraps(func)  # ✅ Fixed: Added @wraps for proper metadata preservation
             async def wrapper(*args, **kwargs):
-                current_user = kwargs.get('current_user')
+                # ✅ Fixed: Better way to get current_user from kwargs
+                current_user = None
+                for key, value in kwargs.items():
+                    if hasattr(value, 'role') and hasattr(value, 'user_id'):
+                        current_user = value
+                        break
+                
                 if not current_user:
                     raise HTTPException(
                         status_code=status.HTTP_401_UNAUTHORIZED,
                         detail="Authentication required",
+                        headers={"WWW-Authenticate": "Bearer"},
                     )
                 
                 # Check if user has any of the required permissions
-                has_access = False
-                for permission in permissions:
-                    if cls.has_permission(current_user.role, permission):
-                        has_access = True
-                        break
+                has_access = any(
+                    cls.has_permission(current_user.role, permission) 
+                    for permission in permissions
+                )
                 
                 if not has_access:
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
-                        detail=f"Insufficient permissions. Required one of: {permissions}",
+                        detail=f"Insufficient permissions. Required one of: {', '.join(permissions)}",
                     )
                 
                 return await func(*args, **kwargs)

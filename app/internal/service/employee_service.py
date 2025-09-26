@@ -1,5 +1,5 @@
 from typing import List, Optional, Dict, Any
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, UploadFile
 from app.internal.repository.employee_repo import EmployeeRepository
 from app.dto.employee_dto import (
     CreateEmployeeDto,
@@ -80,9 +80,14 @@ class EmployeeService:
                 detail=f"Failed to retrieve employees: {str(e)}"
             )
     
-    async def update_employee(self, employee_id: str, employee_data: UpdateEmployeeDto) -> EmployeeResponseDto:
+    async def update_employee(
+        self, 
+        employee_id: str, 
+        employee_data: UpdateEmployeeDto,
+        photo: Optional[UploadFile] = None
+    ) -> EmployeeResponseDto:
         
-        # checking employee exists
+        # Check if employee exists
         existing_employee = await self.employee_repo.find_by_id(employee_id)
         if not existing_employee:
             raise HTTPException(
@@ -90,7 +95,7 @@ class EmployeeService:
                 detail="Employee not found"
             )
         
-        #check email uniques
+        # Check email uniqueness (hanya jika email diupdate)
         if employee_data.email:
             existing_email = await self.employee_repo.find_by_email(employee_data.email)
             if existing_email and existing_email.employee_id != employee_id:
@@ -98,27 +103,69 @@ class EmployeeService:
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Employee with email '{employee_data.email}' already exists"
                 )
-            
+        
+        photo_info = None
+        
+        # Handle photo upload to Cloudinary (jika ada photo)
+        if photo:
+            try:
+                # Delete old photo if exists
+                if existing_employee.photo_url:
+                    old_public_id = self.cloudinary_service.extract_public_id_from_url(
+                        existing_employee.photo_url
+                    )
+                    if old_public_id:
+                        await self.cloudinary_service.delete_employee_photo(old_public_id)
+                
+                # Upload new photo
+                photo_info = await self.cloudinary_service.upload_employee_photo(
+                    photo, employee_id
+                )
+                
+                # Update photo_url in employee_data
+                employee_data.photo_url = photo_info["url"]
+                
+            except HTTPException:
+                raise
+            except Exception as e:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Failed to upload photo: {str(e)}"
+                )
         
         try:
             updated_employee = await self.employee_repo.update(employee_id, employee_data)
             if not updated_employee:
                 raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="No fields to updated"
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="No fields to update"
                 )
             
-            return EmployeeResponseDto.model_validate(updated_employee)
-        
+            # Convert to EmployeeResponseDto
+            employee_response = EmployeeResponseDto.model_validate(updated_employee)
+            
+            # Add photo info jika ada upload
+            if photo_info:
+                # Extend response dengan photo info
+                response_dict = employee_response.model_dump()
+                response_dict["photo_info"] = {
+                    "uploaded": True,
+                    "url": photo_info["url"],
+                    "size": photo_info["bytes"],
+                    "dimensions": f"{photo_info['width']}x{photo_info['height']}",
+                    "format": photo_info["format"]
+                }
+                
+                return response_dict
+            
+            return employee_response
+            
+        except HTTPException:
+            raise
         except Exception as e:
-            if "Employee not found" in str(e):
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Employee not found"
-                )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"failed to update employee: {str(e)}"
+                detail=f"Failed to update employee: {str(e)}"
             )
         
     async def delete_employee(self, employee_id:str, hard_delete: bool = False) -> dict[str, str]:

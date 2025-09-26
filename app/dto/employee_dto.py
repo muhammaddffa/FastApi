@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field, EmailStr, validator
 
 class EmployeeStatusDto(str, Enum):
     ACTIVE = "ACTIVE"
+    PROBATION = "PROBATION"
     INACTIVE = "INACTIVE"
     ON_LEAVE = "ON_LEAVE"
     SUSPENDED = "SUSPENDED"
@@ -23,7 +24,7 @@ class CreateEmployeeDto(BaseModel):
     phone: Optional[str] = Field(None, max_length=20)
     bank_account: Optional[str] = Field(None, max_length=30)
     bank_name: Optional[str] = Field(None, max_length=50)
-    status: Optional[EmployeeStatusDto] = Field(EmployeeStatusDto.ACTIVE    )   
+    status: EmployeeStatusDto = EmployeeStatusDto.ACTIVE   
     photo_url: Optional[str] = Field(None, max_length=235)
 
     @validator('employee_code')

@@ -6,7 +6,7 @@ from app.dto.employee_dto import CreateEmployeeDto, UpdateEmployeeDto, EmployeeQ
 
 class EmployeeRepository:
     def __init__(self, db: Prisma):
-        self.db = db
+        self.prisma = db
         
     
     async def create(self, employee_data: CreateEmployeeDto) -> employees:
@@ -64,9 +64,9 @@ class EmployeeRepository:
             where["is_active"] = query.is_active
 
         # build order by
-        order_by = {}
+        order = {}
         if query.sort_by:
-            order_by[query.sort_by] = query.sort_order
+            order[query.sort_by] = query.sort_order
 
         # calculate offset
         offset = (query.page - 1) * query.limit
@@ -76,7 +76,7 @@ class EmployeeRepository:
             where=where,
             take=query.limit,
             skip=offset,
-            order_by=order_by
+            order=order
         )
 
         total = await self.prisma.employees.count(where=where)

@@ -1,9 +1,10 @@
-from typing import List, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from typing import List, Dict, Any, Optional
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Form, File, UploadFile
 from fastapi.security import HTTPBearer
 
 from app.internal.connection.prisma import get_db
 from app.internal.repository.employee_repo import EmployeeRepository
+from app.internal.service.cloudinary_service import CloudinaryService
 from app.internal.service.employee_service import EmployeeService
 from app.internal.util.rbac import require_permission
 from app.internal.util.response import success_response, error_response
@@ -17,13 +18,15 @@ from app.dto.employee_dto import (
 from app.internal.util.dependency import get_current_user
 from app.domain.user_model import User
 from prisma import Prisma
-
+from datetime import datetime
+from decimal import Decimal
 
 router = APIRouter(prefix="/api/employee", tags=["Employee"])
 security = HTTPBearer()
 
 def get_employee_service(db: Prisma = Depends(get_db)) -> EmployeeService:
     employee_repo = EmployeeRepository(db)
+    cloudinary_service = CloudinaryService()
     return EmployeeService(employee_repo)
 
 # Create Employee
@@ -37,50 +40,79 @@ def get_employee_service(db: Prisma = Depends(get_db)) -> EmployeeService:
 
 @require_permission(["hrd", "finance"])
 async def create_employee(
-    employee_data: CreateEmployeeDto,
+    # Required form fields
+    employee_code: str = Form(...),
+    full_name: str = Form(...),
+    position: str = Form(...),
+    hire_date: str = Form(..., description="ISO format: YYYY-MM-DD"),
+    basic_salary: float = Form(...),
+    
+    # Optional form fields
+    department: Optional[str] = Form(None),
+    email: Optional[str] = Form(None),
+    phone: Optional[str] = Form(None),
+    bank_account: Optional[str] = Form(None),
+    bank_name: Optional[str] = Form(None),
+    status: str = Form("ACTIVE"),
+    
+    # Optional photo upload
+    photo: Optional[UploadFile] = File(None),
+    
+    # Dependencies
     current_user: User = Depends(get_current_user),
     employee_service: EmployeeService = Depends(get_employee_service)
 ):
-    try: 
+   
+    try:
+        # Parse and validate form data
+        employee_data = CreateEmployeeDto(
+            employee_code=employee_code,
+            full_name=full_name,
+            position=position,
+            department=department,
+            hire_date=datetime.fromisoformat(hire_date),
+            basic_salary=Decimal(str(basic_salary)),
+            email=email,
+            phone=phone,
+            bank_account=bank_account,
+            bank_name=bank_name,
+            status=status
+        )
+        
+        # Create employee
         employee = await employee_service.create_employee(employee_data)
+        
+        # Handle photo upload if provided
+        if photo:
+            update_data = UpdateEmployeeDto()
+            updated_employee = await employee_service.update_employee(
+                employee.employee_id, 
+                update_data, 
+                photo
+            )
+            return success_response(
+                data=updated_employee.model_dump() if hasattr(updated_employee, 'model_dump') else updated_employee,
+                message="Employee created with photo successfully"
+            )
+        
         return success_response(
             data=employee.model_dump(),
             message="Employee created successfully"
         )
+        
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid data format: {str(e)}"
+        )
     except HTTPException:
         raise
     except Exception as e:
         return error_response(
-            message="Internal server error",
+            message=f"Failed to create employee: {str(e)}",
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
-# Update Employee
-@router.patch(
-    "/{employee_id}",
-    response_model=Dict[str,Any],
-    description="Update employee data, requires HR or Finance role"
-)
-@require_permission(["hrd", "finance"])
-async def update_employee(
-    employee_id: str,
-    employee_data: UpdateEmployeeDto,
-    current_user: User = Depends(get_current_user),
-    employee_service: EmployeeService = Depends(get_employee_service)
-):
-    try:
-        employee = await employee_service.update_employee(employee_id, employee_data)
-        return success_response(
-            data=employee.model_dump(),
-            message="Employee updated successfully"
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        return error_response(
-            message="Failed to update employee",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
 
 @router.get(
     "",
@@ -173,6 +205,97 @@ async def get_departments(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
     
+# Update Employee
+@router.patch(
+    "/{employee_id}",
+    response_model=Dict[str, Any],
+    summary="Update employee",
+    description="Update employee with form data and optional photo upload"
+)
+@require_permission(["hrd", "finance"])
+async def update_employee(
+    employee_id: str,
+    
+    # Optional form fields for update
+    full_name: Optional[str] = Form(None),
+    position: Optional[str] = Form(None),
+    department: Optional[str] = Form(None),
+    basic_salary: Optional[float] = Form(None),
+    email: Optional[str] = Form(None),
+    phone: Optional[str] = Form(None),
+    bank_account: Optional[str] = Form(None),
+    bank_name: Optional[str] = Form(None),
+    status: Optional[str] = Form(None),
+    is_active: Optional[bool] = Form(None),
+    
+    # Optional photo upload
+    photo: Optional[UploadFile] = File(None),
+    
+    # Dependencies
+    current_user: User = Depends(get_current_user),
+    employee_service: EmployeeService = Depends(get_employee_service)
+):
+    try:
+        # Build update data from provided form fields
+        update_fields = {}
+        
+        if full_name is not None:
+            update_fields['full_name'] = full_name
+        if position is not None:
+            update_fields['position'] = position
+        if department is not None:
+            update_fields['department'] = department
+        if basic_salary is not None:
+            update_fields['basic_salary'] = Decimal(str(basic_salary))
+        if email is not None:
+            update_fields['email'] = email
+        if phone is not None:
+            update_fields['phone'] = phone
+        if bank_account is not None:
+            update_fields['bank_account'] = bank_account
+        if bank_name is not None:
+            update_fields['bank_name'] = bank_name
+        if status is not None:
+            update_fields['status'] = status
+        if is_active is not None:
+            update_fields['is_active'] = is_active
+        
+        # Check if any fields provided for update
+        if not update_fields and not photo:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No fields provided for update"
+            )
+        
+        # Create UpdateEmployeeDto with only provided fields
+        employee_data = UpdateEmployeeDto(**update_fields)
+        
+        # Update employee with optional photo
+        updated_employee = await employee_service.update_employee(
+            employee_id, 
+            employee_data, 
+            photo
+        )
+        
+        photo_message = " with photo" if photo else ""
+        return success_response(
+            data=updated_employee.model_dump() if hasattr(updated_employee, 'model_dump') else updated_employee,
+            message=f"Employee updated{photo_message} successfully"
+        )
+        
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid data format: {str(e)}"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        return error_response(
+            message=f"Failed to update employee: {str(e)}",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
 
 @router.get(
     "/statistics",
